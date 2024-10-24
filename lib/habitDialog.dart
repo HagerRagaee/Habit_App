@@ -3,11 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:project_app/update_page.dart';
 
 class HabitOptionsDialog {
-  final CollectionReference habitCollection =
-      FirebaseFirestore.instance.collection('daily');
+  // Firestore collections
+  final CollectionReference dailyCollection =
+  FirebaseFirestore.instance.collection('daily');
+  final CollectionReference monthlyCollection =
+  FirebaseFirestore.instance.collection('monthly');
+  final CollectionReference completeTasksCollection =
+  FirebaseFirestore.instance.collection('completeTasks');
 
-  static void showHabitOptionsDialog(BuildContext context, String habitId,
-      String habitName, Function onEdit, Function onDelete) {
+  static void showHabitOptionsDialog(
+      BuildContext context,
+      String habitId,
+      String habitName,
+      Function onEdit,
+      Function onDelete,
+      String collection) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -56,9 +66,12 @@ class HabitOptionsDialog {
     );
   }
 
-  // Delete habit from Firestore
-  void deleteHabit(BuildContext context, String habitId) async {
+  // Delete habit from Firestore for all collections
+  void deleteHabit(
+      BuildContext context, String habitId, String collection) async {
     try {
+      final CollectionReference habitCollection = _getCollection(collection);
+
       await habitCollection.doc(habitId).delete();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Habit deleted successfully')),
@@ -70,21 +83,24 @@ class HabitOptionsDialog {
     }
   }
 
-  void editHabit(BuildContext context, String habitId) async {
+  // Edit habit from Firestore for all collections
+  void editHabit(BuildContext context, String habitId, String collection) async {
+    final CollectionReference habitCollection = _getCollection(collection);
+
     // Fetch the existing habit data from Firestore
     DocumentSnapshot habitSnapshot = await habitCollection.doc(habitId).get();
 
     if (habitSnapshot.exists) {
       Map<String, dynamic> habitData =
-          habitSnapshot.data() as Map<String, dynamic>;
+      habitSnapshot.data() as Map<String, dynamic>;
 
       // Ensure all required fields are included in the habitData
       habitData.putIfAbsent('habitName', () => habitSnapshot.get("task_name"));
       habitData.putIfAbsent(
           'description', () => habitSnapshot.get("description"));
       habitData.putIfAbsent('color', () => 0xFFFFFFFF); // Default color
-      habitData.putIfAbsent('selectedDays', () => []);
-      habitData.putIfAbsent('selectedDates', () => []);
+      habitData.putIfAbsent('selectedDays', () => []); // For daily tasks
+      habitData.putIfAbsent('selectedDates', () => []); // For monthly tasks
       habitData.putIfAbsent('reminderEnabled', () => false);
       habitData.putIfAbsent('reminderTime', () => null);
 
@@ -94,14 +110,30 @@ class HabitOptionsDialog {
             (habitData['reminderTime'] as Timestamp).toDate();
       }
 
+      // Navigate to UpdatePage with the habit data
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => UpdatePage(
             habitId: habitId,
             habitData: habitData,
+            collection: collection, // Pass collection type to UpdatePage
           ),
         ),
       );
+    }
+  }
+
+  // Get the correct Firestore collection based on the provided collection type
+  CollectionReference _getCollection(String collection) {
+    switch (collection) {
+      case 'daily':
+        return dailyCollection;
+      case 'monthly':
+        return monthlyCollection;
+      case 'completeTasks':
+        return completeTasksCollection;
+      default:
+        throw Exception('Unknown collection: $collection');
     }
   }
 }

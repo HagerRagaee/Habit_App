@@ -38,7 +38,7 @@ class _RegisterState extends State<Register> {
             height: screenSize.height,
             decoration: const BoxDecoration(
               image: DecorationImage(
-                image: AssetImage("assets/images/register.jpg"),
+                image: AssetImage("assets/images/background.jpg"),
                 fit: BoxFit.cover,
               ),
             ),
@@ -52,13 +52,13 @@ class _RegisterState extends State<Register> {
                   children: [
                     const SizedBox(height: 30),
                     const Text(
-                      "Join Habitly Today✨",
+                      "Join HabitFlow Today✨",
                       style: TextStyle(
                         fontSize: 24,
                         color: Colors.white,
                         shadows: [
                           Shadow(
-                            color: Color.fromARGB(255, 163, 70, 240),
+                            color: Color.fromARGB(255, 201, 160, 220),
                             offset: Offset(2, 2),
                             blurRadius: 3.0,
                           ),
@@ -68,14 +68,14 @@ class _RegisterState extends State<Register> {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      "Start your habit journey with Habitly. It's quick, easy, and free!",
+                      "Start your habit journey with HabitFlow. It's quick, easy, and free!",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 17,
                         color: Colors.white,
                         shadows: [
                           Shadow(
-                            color: Color.fromARGB(255, 163, 70, 240),
+                            color: Color.fromARGB(255, 201, 160, 220),
                             offset: Offset(2, 2),
                             blurRadius: 3.0,
                           ),
@@ -179,7 +179,7 @@ class _RegisterState extends State<Register> {
           color: Colors.white,
           shadows: [
             Shadow(
-              color: Color.fromARGB(255, 145, 30, 240),
+              color: Color.fromARGB(255, 201, 160, 220),
               offset: Offset(2, 2),
               blurRadius: 3.0,
             ),
@@ -188,7 +188,7 @@ class _RegisterState extends State<Register> {
         ),
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(icon, color: const Color.fromARGB(255, 163, 70, 240)),
+        prefixIcon: Icon(icon, color: const Color.fromARGB(255, 241, 194, 125)),
         contentPadding:
             const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         border: OutlineInputBorder(
@@ -200,7 +200,7 @@ class _RegisterState extends State<Register> {
         color: Colors.white,
         shadows: [
           Shadow(
-            color: Color.fromARGB(255, 145, 30, 240),
+            color: Color.fromARGB(255, 201, 160, 220),
             offset: Offset(2, 2),
             blurRadius: 3.0,
           ),
@@ -224,7 +224,7 @@ class _RegisterState extends State<Register> {
           color: Colors.white,
           shadows: [
             Shadow(
-              color: Color.fromARGB(255, 145, 30, 240),
+              color: Color.fromARGB(255, 201, 160, 220),
               offset: Offset(2, 2),
               blurRadius: 3.0,
             ),
@@ -232,11 +232,11 @@ class _RegisterState extends State<Register> {
           fontWeight: FontWeight.bold,
         ),
         prefixIcon:
-            const Icon(Icons.lock, color: Color.fromARGB(255, 163, 70, 240)),
+            const Icon(Icons.lock, color: Color.fromARGB(255, 241, 194, 125)),
         suffixIcon: IconButton(
           icon: Icon(
             isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-            color: const Color.fromARGB(255, 163, 70, 240),
+            color: const Color.fromARGB(255, 241, 194, 125),
           ),
           onPressed: () {
             setState(() {
@@ -255,7 +255,7 @@ class _RegisterState extends State<Register> {
         color: Colors.white,
         shadows: [
           Shadow(
-            color: Color.fromARGB(255, 145, 30, 240),
+            color: Color.fromARGB(255, 80, 76, 176),
             offset: Offset(2, 2),
             blurRadius: 3.0,
           ),
@@ -283,7 +283,7 @@ class _RegisterState extends State<Register> {
               rememberMe = value!;
             });
           },
-          activeColor: const Color.fromARGB(255, 163, 70, 240),
+          activeColor: const Color.fromARGB(255, 80, 76, 176),
         ),
         const Text(
           "I agree to Habitly Terms & Conditions",
@@ -319,7 +319,7 @@ class _RegisterState extends State<Register> {
           child: const Text(
             "Sign In",
             style: TextStyle(
-              color: Color.fromARGB(255, 163, 70, 240),
+              color: Color.fromARGB(255, 93, 58, 109),
               fontSize: 18,
             ),
           ),
@@ -334,7 +334,7 @@ class _RegisterState extends State<Register> {
       width: double.infinity,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color.fromARGB(255, 163, 70, 240),
+          backgroundColor: const Color.fromARGB(255, 216, 138, 151),
           padding: const EdgeInsets.all(15),
         ),
         onPressed:

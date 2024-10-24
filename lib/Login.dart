@@ -30,7 +30,7 @@ class _LoginState extends State<Login> {
         children: [
           Center(
             child: Image.asset(
-              "assets/images/login.jpg",
+              "assets/images/background.jpg",
               height: 1000,
               width: 1000,
               fit: BoxFit.cover,
@@ -53,7 +53,7 @@ class _LoginState extends State<Login> {
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: Color.fromARGB(255, 163, 70, 240),
+                              color: Color.fromARGB(255, 201, 160, 220),
                               offset: Offset(2, 2),
                               blurRadius: 3.0,
                             ),
@@ -70,7 +70,7 @@ class _LoginState extends State<Login> {
                           color: Colors.white,
                           shadows: [
                             Shadow(
-                              color: Color.fromARGB(255, 163, 70, 240),
+                              color: Color.fromARGB(255, 201, 160, 220),
                               offset: Offset(2, 2),
                               blurRadius: 3.0,
                             ),
@@ -89,7 +89,7 @@ class _LoginState extends State<Login> {
                             color: Colors.white,
                             shadows: [
                               Shadow(
-                                color: Color.fromARGB(255, 163, 70, 240),
+                                color: Color.fromARGB(255, 201, 160, 220),
                                 offset: Offset(2, 2),
                                 blurRadius: 3.0,
                               ),
@@ -104,7 +104,7 @@ class _LoginState extends State<Login> {
                         decoration: InputDecoration(
                           hintText: 'Enter Your Email',
                           prefixIcon: const Icon(Icons.email,
-                              color: Color.fromARGB(255, 163, 70, 240)),
+                              color: Color.fromARGB(255, 241, 194, 125)),
                           contentPadding: const EdgeInsets.symmetric(
                               vertical: 20, horizontal: 20),
                           border: OutlineInputBorder(
@@ -137,7 +137,7 @@ class _LoginState extends State<Login> {
                             color: Colors.white,
                             shadows: [
                               Shadow(
-                                color: Color.fromARGB(255, 163, 70, 240),
+                                color: Color.fromARGB(255, 201, 160, 220),
                                 offset: Offset(2, 2),
                                 blurRadius: 3.0,
                               ),
@@ -152,7 +152,7 @@ class _LoginState extends State<Login> {
                         decoration: InputDecoration(
                           hintText: 'Enter Your Password',
                           prefixIcon: const Icon(Icons.lock,
-                              color: Color.fromARGB(255, 163, 70, 240)),
+                              color: Color.fromARGB(255, 241, 194, 125)),
                           contentPadding: const EdgeInsets.symmetric(
                               vertical: 20, horizontal: 20),
                           border: OutlineInputBorder(
@@ -188,7 +188,7 @@ class _LoginState extends State<Login> {
                                   });
                                 },
                                 activeColor:
-                                    const Color.fromARGB(255, 163, 70, 240),
+                                    const Color.fromARGB(255, 201, 160, 220),
                               ),
                               const Text(
                                 "Remember Me",
@@ -209,7 +209,7 @@ class _LoginState extends State<Login> {
                             child: const Text(
                               "Forgot Password?",
                               style: TextStyle(
-                                color: Color.fromARGB(255, 163, 70, 240),
+                                color: Color.fromARGB(255, 93, 58, 109),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -244,7 +244,7 @@ class _LoginState extends State<Login> {
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:
-                                    const Color.fromARGB(255, 163, 70, 240),
+                                    const Color.fromARGB(255, 216, 138, 151),
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 30, vertical: 15),
                               ),
@@ -268,7 +268,7 @@ class _LoginState extends State<Login> {
                         child: const Text(
                           "Don't have an account? Sign Up",
                           style: TextStyle(
-                            color: Color.fromARGB(255, 163, 70, 240),
+                            color: Color.fromARGB(255, 93, 58, 109),
                             fontWeight: FontWeight.bold,
                           ),
                         ),

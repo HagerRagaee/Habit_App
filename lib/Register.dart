@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:project_app/Login.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -19,6 +22,7 @@ class _RegisterState extends State<Register> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool rememberMe = false;
   bool isPasswordVisible = false;
+  bool isLoading = false; // Loading indicator state
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -27,7 +31,6 @@ class _RegisterState extends State<Register> {
     final screenSize = MediaQuery.of(context).size;
 
     return Scaffold(
-      appBar: AppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Container(
@@ -146,6 +149,10 @@ class _RegisterState extends State<Register> {
 
                     // Register Button
                     _buildRegisterButton(),
+                    const SizedBox(height: 20),
+
+                    // Loading Indicator
+                    if (isLoading) const CircularProgressIndicator(),
                   ],
                 ),
               ),
@@ -330,15 +337,20 @@ class _RegisterState extends State<Register> {
           backgroundColor: const Color.fromARGB(255, 163, 70, 240),
           padding: const EdgeInsets.all(15),
         ),
-        onPressed: _registerUser,
-        child: const Text(
-          "Register",
-          style: TextStyle(
-            fontSize: 20,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        onPressed:
+            isLoading ? null : _registerUser, // Disable button if loading
+        child: isLoading
+            ? const CircularProgressIndicator(
+                color: Colors.white,
+              )
+            : const Text(
+                "Register",
+                style: TextStyle(
+                  fontSize: 20,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
   }
@@ -346,12 +358,19 @@ class _RegisterState extends State<Register> {
   // Method to register user
   void _registerUser() async {
     if (_formKey.currentState?.validate() == true) {
+      setState(() {
+        isLoading = true; // Set loading to true
+      });
+
       try {
         UserCredential userCredential =
             await _auth.createUserWithEmailAndPassword(
           email: emailController.text.trim(),
           password: passwordController.text.trim(),
         );
+
+        // Save user ID to SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
 
         // Optionally, save user data to Firestore
         await FirebaseFirestore.instance
@@ -361,7 +380,16 @@ class _RegisterState extends State<Register> {
           'name': nameController.text.trim(),
           'email': emailController.text.trim(),
           'phone': phoneController.text.trim(),
+          'profile_image': Uint8List(0),
         });
+
+        // Save user data to SharedPreferences
+        await prefs.setString('name', nameController.text.trim());
+        await prefs.setString('email', emailController.text.trim());
+        await prefs.setString('phone', phoneController.text.trim());
+        await prefs.setString('userId', userCredential.user?.uid ?? '');
+        print(await prefs.setString('userId', userCredential.user?.uid ?? ''));
+        print(prefs.setString('name', nameController.text.trim()));
 
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
@@ -383,6 +411,10 @@ class _RegisterState extends State<Register> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('An error occurred. Please try again.')),
         );
+      } finally {
+        setState(() {
+          isLoading = false; // Set loading to false after the operation
+        });
       }
     }
   }

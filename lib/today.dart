@@ -27,8 +27,12 @@ class _TodayState extends State<Today> {
   getData() async {
     if (userId != null) {
       DateTime today = DateTime.now();
-      int todayWeekday = today.weekday; // 1 for Monday, 7 for Sunday
+      int todayWeekday =
+          today.weekday; // 1 for Monday, 2 for Tuesday, ..., 4 for Wednesday
       int todayDay = today.day; // The day of the month
+
+      todayWeekday += 1;
+      print("Today is weekday: $todayWeekday"); // Debug print
 
       // Fetch daily tasks and filter them by today's weekday
       QuerySnapshot dailySnapshot = await FirebaseFirestore.instance
@@ -38,8 +42,11 @@ class _TodayState extends State<Today> {
 
       dailyTasks = dailySnapshot.docs.where((task) {
         List<dynamic> repeatDays = task['repeat_days'] ?? [];
-        return repeatDays.contains(todayWeekday);
+        return repeatDays.contains(
+            todayWeekday); // Should correctly match with 4 for Wednesday
       }).toList();
+
+      print("Filtered daily tasks: ${dailyTasks.length}"); // Debug print
 
       // Fetch monthly tasks and filter them by today's day of the month
       QuerySnapshot monthlySnapshot = await FirebaseFirestore.instance
@@ -52,7 +59,9 @@ class _TodayState extends State<Today> {
         return repeatDates.contains(todayDay);
       }).toList();
 
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
     } else {
       print("No user is signed in.");
     }
@@ -76,6 +85,78 @@ class _TodayState extends State<Today> {
       } catch (e) {
         // Handle any errors
         print("Error fetching completed tasks: $e");
+      }
+    }
+  }
+
+  Future<void> moveUncompletedTasks() async {
+    if (userId != null) {
+      try {
+        DateTime today = DateTime.now();
+        int todayWeekday = today.weekday;
+        todayWeekday += 1; // Get today's weekday
+
+        // Move uncompleted daily tasks
+        QuerySnapshot dailySnapshot = await FirebaseFirestore.instance
+            .collection("daily")
+            .where("user_id", isEqualTo: userId)
+            .get();
+
+        for (var task in dailySnapshot.docs) {
+          List<dynamic> repeatDays = task['repeat_days'] ?? [];
+          if (!task['completed'] && !repeatDays.contains(todayWeekday)) {
+            // Prepare task data for uncompleted collection
+            Map<String, dynamic> taskData = {
+              'task_name': task['task_name'],
+              'description': task['description'],
+              'color': task['color'],
+              'user_id': task['user_id'],
+              'created_at': FieldValue.serverTimestamp(),
+            };
+            // Add to uncompletedTasks collection
+            await FirebaseFirestore.instance
+                .collection("uncompletedTasks")
+                .add(taskData);
+            // Remove from daily collection
+            await FirebaseFirestore.instance
+                .collection("daily")
+                .doc(task.id)
+                .delete();
+          }
+        }
+
+        // Move uncompleted monthly tasks
+        QuerySnapshot monthlySnapshot = await FirebaseFirestore.instance
+            .collection("monthly")
+            .where("user_id", isEqualTo: userId)
+            .get();
+
+        for (var task in monthlySnapshot.docs) {
+          if (!task['completed']) {
+            // Prepare task data for uncompleted collection
+            Map<String, dynamic> taskData = {
+              'task_name': task['task_name'],
+              'description': task['description'],
+              'color': task['color'],
+              'user_id': task['user_id'],
+              'created_at': FieldValue.serverTimestamp(),
+            };
+            // Add to uncompletedTasks collection
+            await FirebaseFirestore.instance
+                .collection("uncompletedTasks")
+                .add(taskData);
+            // Remove from monthly collection
+            await FirebaseFirestore.instance
+                .collection("monthly")
+                .doc(task.id)
+                .delete();
+          }
+        }
+
+        print(
+            "Uncompleted tasks have been moved to uncompletedTasks collection.");
+      } catch (e) {
+        print("Error moving uncompleted tasks: $e");
       }
     }
   }
@@ -147,7 +228,10 @@ class _TodayState extends State<Today> {
             TaskName: task['task_name'],
             TaskColor: Color(task['color']),
             trailing: IconButton(
-              icon: const Icon(Icons.check_circle_outline),
+              icon: const Icon(
+                Icons.check_circle_outline,
+                color: Colors.white,
+              ),
               onPressed: () {
                 markTaskAsCompleted(task, "daily");
               },
@@ -163,7 +247,10 @@ class _TodayState extends State<Today> {
             TaskName: task['task_name'],
             TaskColor: Color(task['color']),
             trailing: IconButton(
-              icon: const Icon(Icons.check_circle_outline),
+              icon: const Icon(
+                Icons.check_circle_outline,
+                color: Colors.white,
+              ),
               onPressed: () {
                 markTaskAsCompleted(task, "monthly");
               },
@@ -190,7 +277,7 @@ class _TodayState extends State<Today> {
           TaskItem(
             icon: Icons.check_circle,
             TaskName: completedTask['task_name'],
-            TaskColor: Colors.grey, // Completed task color
+            TaskColor: Colors.green, // Completed task color
           ),
       ],
     );

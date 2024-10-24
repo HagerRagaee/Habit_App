@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
-import 'create_new_habit.dart';
+import 'package:project_app/update_page.dart';
 
 class HabitOptionsDialog {
   final CollectionReference habitCollection =
@@ -97,7 +96,7 @@ class HabitOptionsDialog {
 
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => CreateHabitScreen(
+          builder: (context) => UpdatePage(
             habitId: habitId,
             habitData: habitData,
           ),

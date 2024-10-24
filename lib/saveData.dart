@@ -1,5 +1,8 @@
 // ignore_for_file: depend_on_referenced_packages, deprecated_member_use, unused_local_variable
+import 'dart:typed_data';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:project_app/notification.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +12,8 @@ class HabitService {
   static final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  static final FirebaseStorage _storage = FirebaseStorage.instance;
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static String? userId = FirebaseAuth.instance.currentUser?.uid;
 
   // Save habit to Firestore
@@ -33,6 +38,10 @@ class HabitService {
       print("User not logged in.");
       return;
     }
+
+    // for (var day in selectedDays!) {
+    //   day -= 1;
+    // }
 
     if (isDaily && selectedDays != null && selectedDays.isNotEmpty) {
       DocumentReference ref = await dailyCollection.add({
@@ -144,5 +153,38 @@ class HabitService {
         'user_id': userId,
       });
     }
+  }
+
+  Future<String> uploadImage(String childName, Uint8List file) async {
+    Reference ref = _storage.ref().child(childName);
+    UploadTask uploadTask = ref.putData(file);
+    TaskSnapshot snapshot = await uploadTask;
+    String downloadUrl = await snapshot.ref.getDownloadURL();
+    return downloadUrl;
+  }
+
+  Future<String> save(
+      {required Uint8List file,
+      required String name,
+      required String email,
+      required String phone,
+      String? selectedGender,
+      DateTime? birthdate}) async {
+    String resp = "Some error Occured while saving";
+    try {
+      String imageUrl = await uploadImage("ProfileImage", file);
+      await _firestore.collection("users").add({
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'profile_image': imageUrl,
+        'gender': selectedGender,
+        'birthdate': birthdate!.toIso8601String(), // Convert to UTC timestamp
+      });
+      resp = "User saved successfully";
+    } catch (err) {
+      resp = err.toString();
+    }
+    return resp;
   }
 }

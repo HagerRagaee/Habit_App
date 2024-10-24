@@ -1,28 +1,30 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:project_app/pick_image-function.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:project_app/Login.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({Key? key}) : super(key: key);
 
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+  String? _image;
   String? name;
   String? email;
   String? phone;
   String? imagePath;
-  String? selectedGender;
-  DateTime? selectedDate;
-  String? selectedImagePath;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  String? selectedGender = "Male";
+  DateTime? selectedDate = DateTime.now();
+  String? userId;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -32,86 +34,58 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    User? currentUser = _auth.currentUser;
-
     setState(() {
-      name = currentUser?.displayName ?? prefs.getString('name');
-      email = currentUser?.email ?? prefs.getString('email');
-      phone = prefs.getString('phone'); // Assuming you store phone elsewhere
-      imagePath = prefs.getString('imagePath');
+      userId = prefs.getString('userId');
+      name = prefs.getString('name');
+      email = prefs.getString('email');
+      phone = prefs.getString('phone');
+      imagePath = prefs.getString('imagePath'); // Load the image path
+      selectedGender = prefs.getString('gender');
+      String? dateString = prefs.getString('birthdate');
+      if (dateString != null) {
+        selectedDate = DateTime.parse(dateString);
+      }
+      _image = imagePath; // Initialize _image with the loaded imagePath
     });
   }
 
-  Future<void> pickImage() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
+  Future<void> saveUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString('name', name ?? '');
+    prefs.setString('email', email ?? '');
+    prefs.setString('phone', phone ?? '');
+    prefs.setString('imagePath', imagePath ?? '');
+    prefs.setString('gender', selectedGender ?? '');
+    prefs.setString('birthdate',
+        selectedDate != null ? selectedDate!.toIso8601String() : '');
 
-    if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        selectedImagePath = result.files.single.path;
-      });
-
-      if (selectedImagePath != null) {
-        await uploadImageToFirebase(selectedImagePath!);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No image selected.')),
-        );
-      }
-    }
+    print("Image path saved: $imagePath");
   }
 
-  Future<void> uploadImageToFirebase(String path) async {
-    File file = File(path);
-    try {
-      String fileName = '${_auth.currentUser?.uid}.jpg';
-      Reference ref = _storage.ref().child('profile_images/$fileName');
-      UploadTask uploadTask = ref.putFile(file);
+  Future<void> uploadImage(String path) async {
+    final file = File(path);
+    final storageRef = FirebaseStorage.instance.ref();
+    final imageRef = storageRef.child(
+        'profile_images/${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg');
 
-      // Listen for the upload progress (optional)
-      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-        // Handle upload progress if needed
-      });
+    await imageRef.putFile(file);
+    final downloadUrl = await imageRef.getDownloadURL();
 
-      // Get the download URL
-      String downloadUrl = await (await uploadTask).ref.getDownloadURL();
+    setState(() {
+      imagePath = downloadUrl; // Update imagePath with the download URL
+      _image = downloadUrl; // Update _image to reflect the uploaded image
+      saveUserData();
+    });
 
-      // Save the URL in SharedPreferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('imagePath', downloadUrl);
-
-      // Update user profile
-      await updateProfile(name ?? '', downloadUrl);
-
-      setState(() {
-        imagePath = downloadUrl;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Image uploaded successfully!'),
-      ));
-    } catch (e) {
-      print(e);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Error uploading image: $e'),
-      ));
-    }
+    print("Image uploaded successfully, URL: $downloadUrl");
   }
 
-  Future<void> updateProfile(String name, String imageUrl) async {
-    User? user = _auth.currentUser;
-
-    if (user != null) {
-      await user.updateProfile(displayName: name, photoURL: imageUrl);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('name', name);
-      await prefs.setString('imagePath', imageUrl);
-
-      // Refresh the user data
-      loadUserData();
-    }
+  void selectImage() async {
+    String imagePath = await pickImage(ImageSource.gallery);
+    setState(() {
+      this.imagePath = imagePath; // Update local variable
+      uploadImage(imagePath); // Upload the selected image
+    });
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -124,65 +98,53 @@ class _ProfilePageState extends State<ProfilePage> {
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;
+        saveUserData();
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.purple[700],
         title: const Text(
           "Personal Information",
           style: TextStyle(
-              fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
-        backgroundColor: Colors.teal,
         centerTitle: true,
       ),
       body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            height: screenSize.height,
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage("assets/images/profile.jpg"),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
           SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 170),
+                  const SizedBox(height: 50),
                   Center(
                     child: Stack(
                       children: [
                         CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.grey[300],
-                          backgroundImage: imagePath != null
-                              ? NetworkImage(imagePath!)
-                              : null,
-                          child: imagePath == null
-                              ? const Icon(Icons.person,
-                                  size: 60, color: Colors.white)
-                              : null,
+                          radius: 64,
+                          backgroundColor: Colors.purple[100],
+                          backgroundImage:
+                              _image != null ? NetworkImage(_image!) : null,
                         ),
                         Positioned(
-                          bottom: 0,
+                          bottom: -10,
                           right: 0,
                           child: IconButton(
                             icon: const Icon(Icons.camera_alt,
-                                color: Colors.teal, size: 30),
-                            onPressed: pickImage,
+                                color: Colors.black, size: 30),
+                            onPressed: selectImage,
                             tooltip: "Edit Profile Image",
+                            color: Colors.purple[700],
                           ),
                         ),
                       ],
@@ -192,97 +154,75 @@ class _ProfilePageState extends State<ProfilePage> {
                   Container(
                     padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.8),
+                      color: Colors.purple[50],
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
                       children: [
-                        buildInfoText("Name: ${name ?? ''}", Icons.person),
-                        const SizedBox(height: 10),
-                        buildInfoText("Email: ${email ?? ''}", Icons.email),
-                        const SizedBox(height: 10),
-                        buildInfoText("Phone: ${phone ?? ''}", Icons.phone),
-                        const SizedBox(height: 20),
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text("Gender",
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w500)),
+                        _buildInfoCard(
+                          icon: Icons.person,
+                          label: "Name",
+                          value: name ?? '',
                         ),
-                        const SizedBox(height: 5),
-                        DropdownButtonFormField<String>(
+                        _buildInfoCard(
+                          icon: Icons.email,
+                          label: "Email",
+                          value: email ?? '',
+                        ),
+                        _buildInfoCard(
+                          icon: Icons.phone,
+                          label: "Phone",
+                          value: phone ?? '',
+                        ),
+                        const SizedBox(height: 20),
+                        _buildDropdown(
+                          label: "Gender",
                           value: selectedGender,
-                          hint: const Text("Select your Gender"),
-                          items: <String>['Male', 'Female'].map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          decoration: InputDecoration(
-                            contentPadding: const EdgeInsets.symmetric(
-                                vertical: 10, horizontal: 5),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            filled: true,
-                            fillColor: Colors.teal[50],
-                          ),
+                          items: ['Male', 'Female'],
                           onChanged: (String? newValue) {
                             setState(() {
                               selectedGender = newValue;
+                              saveUserData();
                             });
                           },
                         ),
                         const SizedBox(height: 10),
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text("BirthDate",
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w500)),
-                        ),
-                        const SizedBox(height: 5),
-                        TextFormField(
-                          controller: TextEditingController(
-                            text: selectedDate != null
-                                ? DateFormat('yyyy-MM-dd').format(selectedDate!)
-                                : '',
-                          ),
-                          decoration: InputDecoration(
-                            labelText: "BirthDate",
-                            suffixIcon: const Icon(Icons.calendar_today,
-                                color: Colors.teal),
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            filled: true,
-                            fillColor: Colors.teal[50],
-                          ),
-                          readOnly: true,
+                        _buildDateField(
+                          label: "BirthDate",
+                          value: selectedDate != null
+                              ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+                              : 'Select your Birthdate',
                           onTap: () => _selectDate(context),
                         ),
-                        const SizedBox(height: 30),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 100, vertical: 5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          onPressed: () async {
-                            // Navigate to LoginPage
-                            await FirebaseAuth.instance.signOut();
-                            Navigator.of(context).pushNamedAndRemoveUntil(
-                                "Login", (rout) => false);
-                          },
-                          child: const Text(
-                            "Log Out",
-                            style: TextStyle(fontSize: 18, color: Colors.white),
-                          ),
-                        ),
+                        const SizedBox(height: 20),
+                        _buildSignOutButton(),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () async {
+                      setState(() => _isLoading = true);
+                      await saveUserData();
+                      setState(() => _isLoading = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Changes saved successfully')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.purple[700],
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 15),
+                      textStyle: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    child: const Text("Save Changes"),
+                  ),
+                  if (_isLoading)
+                    const Center(
+                      child: CircularProgressIndicator(),
+                    ),
                 ],
               ),
             ),
@@ -292,13 +232,111 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget buildInfoText(String text, IconData icon) {
-    return Row(
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Card(
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.purple[700]),
+        title: Text(
+          label,
+          style:
+              TextStyle(fontWeight: FontWeight.bold, color: Colors.purple[700]),
+        ),
+        subtitle: Text(value, style: const TextStyle(fontSize: 16)),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: Colors.teal),
-        const SizedBox(width: 10),
-        Text(text, style: const TextStyle(fontSize: 16)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 5),
+        DropdownButtonFormField<String>(
+          value: value,
+          hint: Text("Select your $label"),
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(item),
+            );
+          }).toList(),
+          decoration: InputDecoration(
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            filled: true,
+            fillColor: Colors.purple[100],
+          ),
+          onChanged: onChanged,
+        ),
       ],
+    );
+  }
+
+  Widget _buildDateField({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 5),
+        TextFormField(
+          readOnly: true,
+          onTap: onTap,
+          decoration: InputDecoration(
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            filled: true,
+            fillColor: Colors.purple[100],
+            hintText: value,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSignOutButton() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: [
+          const Icon(Icons.exit_to_app),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const Login(),
+                ),
+              );
+            },
+            child: Text("Sign Out",
+                style: TextStyle(color: Colors.purple[700], fontSize: 19)),
+          ),
+        ],
+      ),
     );
   }
 }

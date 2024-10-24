@@ -3,10 +3,63 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-class NotificationHandler {
-  static final _notification = FlutterLocalNotificationsPlugin();
+class NotificationService {
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
-  static init() {
+  // Initialize notification settings
+  Future<void> init() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher'); // App icon
+
+    final InitializationSettings initializationSettings =
+        InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+    // Create a notification channel for Android 8.0+ devices
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'high_importance_channel', // id
+      'High Importance Notifications', // name
+      description: 'This channel is used for important notifications.',
+      importance: Importance.high,
+    );
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
+  // Show notification
+  Future<void> showNotification(String taskName) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'high_importance_channel',
+      'High Importance Notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Uncompleted Task',
+      'You still need to complete: $taskName',
+      platformChannelSpecifics,
+    );
+  }
+}
+
+class NotificationHandler {
+  static final FlutterLocalNotificationsPlugin _notification =
+      FlutterLocalNotificationsPlugin();
+
+  static Future<void> init() async {
     _notification.initialize(const InitializationSettings(
       android: AndroidInitializationSettings(
           '@mipmap/ic_launcher'), // Define your launcher icon here
@@ -16,7 +69,7 @@ class NotificationHandler {
     tz.initializeTimeZones();
   }
 
-  static scheduleNotification(
+  static Future<void> scheduleNotification(
       String title, String body, int id, TimeOfDay timeOfDay) async {
     // Check if it's AM or PM and append it to the body
     String period = timeOfDay.period == DayPeriod.am ? 'AM' : 'PM';

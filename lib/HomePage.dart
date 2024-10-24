@@ -1,8 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:project_app/MyHabitsPage.dart';
-import 'package:project_app/ReportPage.dart';
+import 'package:project_app/chartPage.dart';
 import 'package:project_app/create_new_habit.dart';
 import 'package:project_app/profile.dart';
 import 'package:project_app/today.dart';
@@ -21,35 +20,31 @@ class _HomePageState extends State<HomePage>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Map<String, dynamic>? userData;
-
-  Future<void> fetchUserData() async {
-    User? user = _auth.currentUser;
-    if (user != null) {
-      DocumentSnapshot snapshot =
-          await _firestore.collection('users').doc(user.uid).get();
-      setState(() {
-        userData = snapshot.data() as Map<String, dynamic>?;
-      });
-    }
-  }
-
   late TabController _tabController;
-  int _selectedIndex = 0; // Track the currently selected bottom navigation tab
-
-  // List of pages to navigate
-  final List<Widget> _pages = [
-    const HomePage(),
-    const ReportPage(),
-    const MyHabitsPage(),
-    const ProfilePage(),
-  ];
+  int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    fetchUserData();
-
     _tabController = TabController(length: 2, vsync: this);
+    fetchUserData(); // Fetch user data in the background
+  }
+
+  // Function to fetch user data
+  Future<void> fetchUserData() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      try {
+        DocumentSnapshot snapshot =
+            await _firestore.collection('users').doc(user.uid).get();
+        setState(() {
+          userData =
+              snapshot.data() as Map<String, dynamic>?; // Storing user data
+        });
+      } catch (e) {
+        print('Error fetching user data: $e'); // Handle errors if needed
+      }
+    }
   }
 
   // Function to handle navigation bar tap
@@ -61,49 +56,64 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {},
-          ),
-        ],
-        leading: const Icon(Icons.checklist),
-        centerTitle: true,
-        title: const Text(
-          "Home",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        bottom: _selectedIndex == 0
-            ? TabBar(
-                // Show TabBar only on Home Page
-                indicator: BoxDecoration(
-                  color: const Color(0xFFBA68C8),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                controller: _tabController,
-                tabs: const [
-                  Tab(text: '     Today      '),
-                  Tab(text: '     Weekly     '),
-                ],
-              )
-            : null, // Remove TabBar on other pages
+    final List<Widget> _pages = [
+      const HomePage(),
+      Chartpage(),
+      const Scaffold(
+        body: ProfilePage(),
       ),
+    ];
+
+    return Scaffold(
+      appBar: _selectedIndex == 0 // Show app bar only for the Home page
+          ? AppBar(
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.more_vert),
+                  onPressed: () {},
+                ),
+              ],
+              leading: const Icon(Icons.checklist),
+              centerTitle: true,
+              title: const Text(
+                "Home",
+                style:
+                    TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+              bottom: _selectedIndex == 0
+                  ? TabBar(
+                      indicator: BoxDecoration(
+                        color: const Color(0xFFBA68C8),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      controller: _tabController,
+                      tabs: const [
+                        Tab(text: '     Today      '),
+                        Tab(text: '     Weekly     '),
+                      ],
+                    )
+                  : null, // Remove TabBar on other pages
+            )
+          : null, // No app bar for other pages
       body: _selectedIndex == 0
           ? TabBarView(
               controller: _tabController,
               children: [
-                const Today(), // Custom widget for 'Today' tab
-                WeeklyHabitsScreen(), // Custom widget for 'Weekly' tab
+                const Today(),
+                WeeklyHabitsScreen(),
               ],
             )
-          : _pages[_selectedIndex], // Display the page based on selected tab
+          : Padding(
+              padding:
+                  const EdgeInsets.only(top: 20.0), // Add space from the top
+              child: _pages[
+                  _selectedIndex], // Display the page based on selected tab
+            ),
 
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: Colors.purple,
-        currentIndex: _selectedIndex, // Update the selected index
-        onTap: _onItemTapped, // Add the onTap callback
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
         items: const [
           BottomNavigationBarItem(
             backgroundColor: Colors.white,
@@ -113,11 +123,6 @@ class _HomePageState extends State<HomePage>
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart, color: Colors.purple),
             label: 'Report',
-          ),
-          BottomNavigationBarItem(
-            icon:
-                Icon(Icons.dashboard_customize_outlined, color: Colors.purple),
-            label: 'My Habits',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_circle, color: Colors.purple),
@@ -130,7 +135,7 @@ class _HomePageState extends State<HomePage>
               onPressed: () {
                 Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) => const CreateHabitScreen()));
-              }, // The + icon
+              },
               backgroundColor: const Color(0xFFBA68C8),
               shape: const CircleBorder(),
               child: const Icon(

@@ -67,9 +67,11 @@ class WeeklyHabitsScreen extends StatelessWidget {
                                 habit.id,
                                 habit['task_name'],
                                 () => HabitOptionsDialog().editHabit(
-                                    context, habit.id), // Edit function
+                                    context, habit.id, "daily"), // Edit function
                                 () => HabitOptionsDialog().deleteHabit(
-                                    context, habit.id), // Delete function
+                                    context, habit.id, "daily"),
+                                   "daily",
+                                // Delete function
                               );
                             },
                             child: Container(

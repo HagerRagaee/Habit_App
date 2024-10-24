@@ -25,7 +25,7 @@ class UpdatePage extends StatefulWidget {
       this.taskId,
       this.taskName,
       this.taskColor,
-      this.taskDescription});
+      this.taskDescription, required String collection});
 
   @override
   _CreateHabitScreenState createState() => _CreateHabitScreenState();

@@ -45,7 +45,12 @@ class _ProfilePageState extends State<ProfilePage> {
       if (dateString != null) {
         selectedDate = DateTime.parse(dateString);
       }
-      _image = imagePath; // Initialize _image with the loaded imagePath
+      _image = imagePath != null && imagePath!.isNotEmpty
+          ? Uri.parse(imagePath!).hasScheme
+              ? imagePath
+              : null
+          : null;
+// Initialize _image with the loaded imagePath
     });
   }
 

@@ -134,6 +134,7 @@ class LineChartPage extends StatelessWidget {
         DateTime date = (doc['completed_at'] as Timestamp).toDate();
         int index;
 
+
         if (timeframe == 'This Year') {
           index = date.month - 1; // Months are 1-indexed, adjust to 0-indexed
         } else {

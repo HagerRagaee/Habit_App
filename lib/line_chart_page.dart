@@ -95,7 +95,7 @@ class LineChartPage extends StatelessWidget {
 
     switch (timeframe) {
       case 'This Week':
-        startDate = now.subtract(Duration(days: (now.weekday % 7) + 1));
+        startDate = now.subtract(Duration(days: (now.weekday % 7) + 2));
         endDate = startDate.add(Duration(days: 6));
         break;
       case 'This Month':
@@ -121,10 +121,24 @@ class LineChartPage extends StatelessWidget {
           .orderBy('completed_at')
           .get();
 
-      List<double> data = List.filled(_getDateRangeDaysCount(startDate, endDate), 0.0);
+      List<double> data;
+
+      // Set the size of the data list based on the timeframe
+      if (timeframe == 'This Year') {
+        data = List.filled(12, 0.0); // One for each month
+      } else {
+        data = List.filled(_getDateRangeDaysCount(startDate, endDate), 0.0); // Daily count for other timeframes
+      }
+
       for (var doc in querySnapshot.docs) {
         DateTime date = (doc['completed_at'] as Timestamp).toDate();
-        int index = date.difference(startDate).inDays;
+        int index;
+
+        if (timeframe == 'This Year') {
+          index = date.month - 1; // Months are 1-indexed, adjust to 0-indexed
+        } else {
+          index = date.difference(startDate).inDays;
+        }
 
         if (index >= 0 && index < data.length) {
           data[index] += 1;
@@ -143,7 +157,7 @@ class LineChartPage extends StatelessWidget {
 
     switch (timeframe) {
       case 'This Week':
-        startDate = now.subtract(Duration(days: (now.weekday % 7) + 1));
+        startDate = now.subtract(Duration(days: (now.weekday % 7) + 2));
         endDate = startDate.add(Duration(days: 6));
         break;
       case 'This Month':
@@ -168,13 +182,27 @@ class LineChartPage extends StatelessWidget {
           .orderBy('completed_at')
           .get();
 
-      List<double> data = List.filled(_getDateRangeDaysCount(startDate, endDate), 0.0);
+      List<double> data;
+
+      // Set the size of the data list based on the timeframe
+      if (timeframe == 'This Year') {
+        data = List.filled(12, 0.0); // One for each month
+      } else {
+        data = List.filled(_getDateRangeDaysCount(startDate, endDate), 0.0); // Daily count for other timeframes
+      }
+
       for (var doc in querySnapshot.docs) {
         DateTime date = (doc['completed_at'] as Timestamp).toDate();
-        int index = date.difference(startDate).inDays;
+        int index;
+
+        if (timeframe == 'This Year') {
+          index = date.month - 1; // Months are 1-indexed, adjust to 0-indexed
+        } else {
+          index = date.difference(startDate).inDays;
+        }
 
         if (index >= 0 && index < data.length) {
-          data[index] += 1;
+          data[index] += 1; // Increment the count for the corresponding day or month
         }
       }
       return data;
@@ -232,7 +260,9 @@ class LineChartPage extends StatelessWidget {
         text = '';
     }
     return SideTitleWidget(
-        child: Text(text, style: style), axisSide: meta.axisSide);
+      child: Text(text, style: style),
+      axisSide: meta.axisSide,
+    );
   }
 
   Widget _getLeftTitles(double value, TitleMeta meta) {
